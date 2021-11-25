@@ -1,16 +1,27 @@
-module Slide exposing (..)
+port module Slide exposing (..)
 
 import Browser
 import Browser.Events
 import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font exposing (Font)
 import Html exposing (Html)
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Keyboard.Event exposing (KeyboardEvent, decodeKeyboardEvent)
 import List.Zipper as Zipper exposing (Zipper)
 import Markdown
+
+
+port setStorage : Encode.Value -> Cmd msg
+
+
+type Action
+    = NextSlide
+    | PreviousSlide
+    | NoAction
+
+
+type alias Presentation =
+    Platform.Program () Model Msg
 
 
 type alias SlideShow a =
@@ -38,12 +49,12 @@ code attr language content =
     md attr ("```" ++ language ++ content ++ "```")
 
 
-bullets_ attributes =
-    column attributes << List.map (\s -> text <| "- " ++ s)
+bullets_ point attributes =
+    column attributes << List.map (\s -> text <| point ++ s)
 
 
-bullets attributes =
-    column attributes << List.map (\e -> row [] [ text "- ", e ])
+bullets point attributes =
+    column attributes << List.map (\e -> row [] [ text point, e ])
 
 
 md attributes =
@@ -67,49 +78,92 @@ type Msg
     | KeyboardEvent KeyboardEvent
 
 
-presentation : List (Element.Attribute Msg) -> List (Slide Msg) -> Platform.Program () Model Msg
-presentation attr slides =
+updateWithStorage : (Model -> Encode.Value) -> Msg -> Model -> ( Model, Cmd Msg )
+updateWithStorage encode msg oldModel =
     let
-        init : () -> ( Model, Cmd Msg )
-        init _ =
-            ( Model <| createSlideShow slides
-            , Cmd.none
-            )
-
-        view : Model -> Html Msg
-        view model =
-            Element.layout [] <|
-                el attr <|
-                    Zipper.current model.slides
-
-        update : Msg -> Model -> ( Model, Cmd Msg )
-        update msg model =
-            case msg of
-                NoOp ->
-                    ( model, Cmd.none )
-
-                KeyboardEvent { key } ->
-                    let
-                        _ =
-                            Debug.log "Key Pressed" key
-                    in
-                    case key of
-                        Just "ArrowRight" ->
-                            ( mapSlides nextSlide model, Cmd.none )
-
-                        Just "ArrowLeft" ->
-                            ( mapSlides previousSlide model, Cmd.none )
-
-                        _ ->
-                            ( model, Cmd.none )
-
-        subscriptions : Model -> Sub Msg
-        subscriptions model =
-            Browser.Events.onKeyDown <| Decode.map KeyboardEvent decodeKeyboardEvent
+        ( newModel, cmds ) =
+            update msg oldModel
     in
+    ( newModel
+    , Cmd.batch [ setStorage (encode newModel), cmds ]
+    )
+
+
+actionFromMsg msg =
+    case msg of
+        NoOp ->
+            NoAction
+
+        KeyboardEvent { key } ->
+            case key of
+                Just "ArrowRight" ->
+                    NextSlide
+
+                Just "ArrowLeft" ->
+                    PreviousSlide
+
+                _ ->
+                    NoAction
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    ( case actionFromMsg msg of
+        NoAction ->
+            model
+
+        NextSlide ->
+            mapSlides nextSlide model
+
+        PreviousSlide ->
+            mapSlides previousSlide model
+    , Cmd.none
+    )
+
+
+
+-- init : () -> ( Model, Cmd Msg )
+
+
+decoder =
+    Debug.todo ""
+
+
+init slides flags =
+    let
+        initalModel =
+            createSlideShow slides
+    in
+    ( case Decode.decodeValue decoder flags of
+        Ok actions ->
+            actions
+
+        Err _ ->
+            initalModel
+    , Cmd.none
+    )
+
+
+
+-- view : Model -> Html Msg
+
+
+view attr model =
+    Element.layout [] <|
+        el attr <|
+            Zipper.current model.slides
+
+
+
+-- presentation : List (Element.Attribute Msg) -> List (Slide Msg) -> Presentation
+
+
+presentation encode attr slides =
     Browser.element
-        { init = init
-        , update = update
-        , subscriptions = subscriptions
-        , view = view
+        { init = init slides
+        , update = updateWithStorage encode
+        , view = view attr
+        , subscriptions =
+            \_ ->
+                Browser.Events.onKeyDown <| Decode.map KeyboardEvent decodeKeyboardEvent
         }

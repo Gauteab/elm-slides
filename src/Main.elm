@@ -34,9 +34,10 @@ main =
     presentation options
         [ composeExample
         , box 123
-        , bullets []
-            [ text "test"
-            , text "test2"
+        , bullets_ "· "
+            []
+            [ "test"
+            , "test2"
             ]
         ]
 
