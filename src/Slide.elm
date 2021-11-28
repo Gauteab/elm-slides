@@ -25,6 +25,10 @@ type alias Presentation =
     Platform.Program () Model Msg
 
 
+type alias Slides =
+    Array (Element Msg)
+
+
 code : List (Attribute msg) -> String -> String -> Element msg
 code attr language content =
     md attr ("```" ++ language ++ content ++ "```")
@@ -76,17 +80,17 @@ actionFromMsg msg =
                     NoAction
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Slides -> Msg -> Model -> ( Model, Cmd Msg )
+update slides msg model =
     ( case actionFromMsg msg of
         NoAction ->
             model
 
         NextSlide ->
-            mapIndex ((+) 1) model
+            mapIndex ((+) 1 >> min (Array.length slides - 1)) model
 
         PreviousSlide ->
-            mapIndex ((-) 1) model
+            mapIndex ((\i -> i - 1) >> max 0) model
     , Cmd.none
     )
 
@@ -105,7 +109,7 @@ view slides attr model =
 presentation attr slides =
     Browser.element
         { init = init
-        , update = update
+        , update = update (Array.fromList slides)
         , view = view (Array.fromList slides) attr
         , subscriptions =
             \_ ->
