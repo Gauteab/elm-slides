@@ -11,11 +11,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/haskell.min.js" integrity="sha512-/o/3Hg8RsNQR5cnnrLJwtMDUEm5jUT4SNZOvlfyqY2CjW6LFsRgeue53B8V1VDsaSeJDNfKF3fE+52HGy297fA==" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/elm.min.js" integrity="sha512-AklHo0+JcgjoUD1XG5Pse3CFdB58cwsx/LeyqUrIOH+CtJ+RpgOKCSefWuVYov9vaos3Qrq8Gvik5MUGNDGHBA==" crossorigin="anonymous"></script>
     <title>Slideshow</title>
+    <script src="main.js"></script>
 </head>
 <body>
-    <div id="root"/>
-    <script src="main.js"></script>
-    <script type="text/javascript" src="src/index.js"></script>
+    <main></main>
+    <script type="text/javascript">
+        Elm.Main.init({
+          node: document.querySelector("main"),
+        });
+    </script>
     <noscript> You need to enable JavaScript to run this app. </noscript>
 </body>
 </html>
