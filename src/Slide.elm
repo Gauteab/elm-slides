@@ -1,5 +1,6 @@
 module Slide exposing (..)
 
+import Array exposing (Array)
 import Browser
 import Browser.Events
 import Element exposing (..)
@@ -11,7 +12,7 @@ import Markdown
 
 
 type alias Model =
-    { slides : SlideShow Msg }
+    { index : Int }
 
 
 type Action
@@ -22,29 +23,6 @@ type Action
 
 type alias Presentation =
     Platform.Program () Model Msg
-
-
-type alias SlideShow a =
-    Zipper (Slide a)
-
-
-type alias Slide a =
-    Element a
-
-
-createSlideShow : List (Slide msg) -> SlideShow msg
-createSlideShow =
-    Zipper.fromList >> Maybe.withDefault (Zipper.singleton (text "There are no slides in this presentation :("))
-
-
-previousSlide : Zipper a -> Zipper a
-previousSlide s =
-    Zipper.previous s |> Maybe.withDefault s
-
-
-nextSlide : Zipper a -> Zipper a
-nextSlide s =
-    Zipper.next s |> Maybe.withDefault s
 
 
 code : List (Attribute msg) -> String -> String -> Element msg
@@ -67,9 +45,8 @@ md attributes =
     el attributes << Element.html << Markdown.toHtml []
 
 
-mapSlides : (SlideShow Msg -> SlideShow Msg) -> Model -> Model
-mapSlides f model =
-    { model | slides = f model.slides }
+mapIndex f model =
+    { model | index = f model.index }
 
 
 
@@ -106,32 +83,30 @@ update msg model =
             model
 
         NextSlide ->
-            mapSlides nextSlide model
+            mapIndex ((+) 1) model
 
         PreviousSlide ->
-            mapSlides previousSlide model
+            mapIndex ((-) 1) model
     , Cmd.none
     )
 
 
-init : List (Slide Msg) -> () -> ( Model, Cmd msg )
-init slides () =
-    ( Model <| createSlideShow slides, Cmd.none )
+init () =
+    ( Model 0, Cmd.none )
 
 
-view : List (Attribute msg) -> { a | slides : Zipper (Element msg) } -> Html msg
-view attr model =
+view : Array (Element msg) -> List (Attribute msg) -> Model -> Html msg
+view slides attr model =
     Element.layout [] <|
         el attr <|
-            Zipper.current model.slides
+            Maybe.withDefault none (Array.get model.index slides)
 
 
-presentation : List (Attribute Msg) -> List (Slide Msg) -> Program () Model Msg
 presentation attr slides =
     Browser.element
-        { init = init slides
+        { init = init
         , update = update
-        , view = view attr
+        , view = view (Array.fromList slides) attr
         , subscriptions =
             \_ ->
                 Browser.Events.onKeyDown <| Decode.map KeyboardEvent decodeKeyboardEvent

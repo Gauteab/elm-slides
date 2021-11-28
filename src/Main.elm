@@ -33,19 +33,16 @@ box c =
 main : Program () Model Msg
 main =
     presentation
-        [ Font.family
-            [ Font.typeface "Helvetica"
-            , Font.monospace
-            ]
+        [ Font.family [ Font.monospace ]
         , centerX
         , centerY
         , scrollbars
         ]
         [ composeExample
-        , box 223
+        , box 111
         , bullets_ "· "
             []
             [ "test"
-            , "test2"
+            , "eyy"
             ]
         ]
