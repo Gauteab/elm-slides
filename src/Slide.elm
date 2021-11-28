@@ -78,17 +78,6 @@ type Msg
     | KeyboardEvent KeyboardEvent
 
 
-updateWithStorage : (Model -> Encode.Value) -> Msg -> Model -> ( Model, Cmd Msg )
-updateWithStorage encode msg oldModel =
-    let
-        ( newModel, cmds ) =
-            update msg oldModel
-    in
-    ( newModel
-    , Cmd.batch [ setStorage (encode newModel), cmds ]
-    )
-
-
 actionFromMsg msg =
     case msg of
         NoOp ->
@@ -121,31 +110,8 @@ update msg model =
     )
 
 
-
--- init : () -> ( Model, Cmd Msg )
-
-
-decoder =
-    Debug.todo ""
-
-
-init slides flags =
-    let
-        initalModel =
-            createSlideShow slides
-    in
-    ( case Decode.decodeValue decoder flags of
-        Ok actions ->
-            actions
-
-        Err _ ->
-            initalModel
-    , Cmd.none
-    )
-
-
-
--- view : Model -> Html Msg
+init slides () =
+    ( Model <| createSlideShow slides, Cmd.none )
 
 
 view attr model =
@@ -154,14 +120,10 @@ view attr model =
             Zipper.current model.slides
 
 
-
--- presentation : List (Element.Attribute Msg) -> List (Slide Msg) -> Presentation
-
-
-presentation encode attr slides =
+presentation attr slides =
     Browser.element
         { init = init slides
-        , update = updateWithStorage encode
+        , update = update
         , view = view attr
         , subscriptions =
             \_ ->

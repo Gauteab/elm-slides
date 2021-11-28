@@ -11,7 +11,7 @@ import Slide exposing (..)
 
 
 composeExample =
-    code [] "haskell" """
+    code [] "elm" """
 compose :: (b -> c) -> (a -> b) -> a -> c
 compose f g = \\x -> f (g x)
 compose f g x = f (g x)
@@ -33,7 +33,7 @@ options =
 main =
     presentation options
         [ composeExample
-        , box 123
+        , box 223
         , bullets_ "· "
             []
             [ "test"
